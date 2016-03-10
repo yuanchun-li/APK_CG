@@ -1,40 +1,38 @@
-import java.util.Collections;
-
-import soot.PackManager;
-import soot.Scene;
+import soot.SootClass;
 import soot.SootMethod;
-import soot.jimple.infoflow.android.SetupApplication;
-import soot.jimple.toolkits.callgraph.CallGraph;
-import soot.options.Options;
+
+/**
+ * Created by yzy on 15-11-23.
+ */
 
 public class Main {
-    public final static String jarPath = "/home/yzy/Android/Sdk/platforms/";
+    //TODO 1: check overrides when restoring vertexes;
+    //DONE 2: filter training data and predicting data
+    //DONE 3: generate mapping
+    //DOING 4: evaluate with open source apps:
+    // TODO: add more features (consider class annotations, method annotations, field reaching definitions etc)
+    // FIXME: some different fields and methods are predicted to same name
+    // for each open-sourced app, generate a debug version,
+    // a release version and the mapping.txt corresponding to the release version
 
-    public final static String apk = "/home/yzy/work/2015_autumn/dynamic_trace/app-release.apk";
+    public static void main(String[] args) {
+        // write your code here
+//        PrintStream os = System.out;
 
-    public static void main(String[] args){
-        SetupApplication app = new SetupApplication(jarPath, apk);
-        try{
-            app.calculateSourcesSinksEntrypoints("/home/yzy/work/2016_spring/cgGenerator/lib/SourcesAndSinks.txt");
-        }catch(Exception e){
-            e.printStackTrace();
+        if (!Config.parseArgs(args)) {
+            return;
         }
-        soot.G.reset();
 
-        Options.v().set_src_prec(Options.src_prec_apk);
-        Options.v().set_process_dir(Collections.singletonList(apk));
-        Options.v().set_force_android_jar("/home/yzy/Android/Sdk/platforms/android-23/android.jar");
-        Options.v().set_whole_program(true);
-        Options.v().set_allow_phantom_refs(true);
-        Options.v().set_output_format(Options.output_format_none);
-        Options.v().setPhaseOption("cg.spark verbose:true", "on");
-        Scene.v().loadNecessaryClasses();
+        Config.init();
 
-        SootMethod entryPoint = app.getEntryPointCreator().createDummyMain();
-        Options.v().set_main_class(entryPoint.getSignature());
-        Scene.v().setEntryPoints(Collections.singletonList(entryPoint));
-        PackManager.v().runPacks();
-
-        CallGraph cg = Scene.v().getCallGraph();
+        for (SootClass cls : Config.applicationClasses) {
+            for (SootMethod mth: cls.getMethods()){
+                String DeclaringClass = mth.getDeclaringClass().toString();
+                String MethodDeclaration = mth.getName().toString() +
+                        mth.getParameterTypes().toString()
+                                .replace('[', '(').replace(']', ')');
+                System.out.println(DeclaringClass + '.' + MethodDeclaration);
+            }
+        }
     }
 }
