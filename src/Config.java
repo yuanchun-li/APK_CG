@@ -18,6 +18,7 @@ import soot.jimple.toolkits.infoflow.InfoFlowAnalysis;
 import soot.options.Options;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -250,7 +251,7 @@ public class Config {
         Util.LOGGER.log(Level.INFO, "initializing...");
 
         File logFile = new File(String.format("%s/%s.log", Config.outputDir, mode));
-        File resultFile = new File(String.format("%s/%s.json", Config.outputDir, mode));
+        File resultFile = new File(String.format("%s/%s.txt", Config.outputDir, mode));
 
         try {
             FileHandler fh = new FileHandler(logFile.getAbsolutePath());
@@ -276,10 +277,9 @@ public class Config {
         Options.v().set_allow_phantom_refs(true);
         Options.v().set_output_format(Options.output_format_none);
 
-        //@yzy
         Options.v().set_no_bodies_for_excluded(true);
 
-        Options.v().setPhaseOption("cg.spark verbose:true", "on");
+        Options.v().setPhaseOption("cg.spark", "on");
         Scene.v().loadNecessaryClasses();
 
         Config.isInitialized = true;
@@ -302,6 +302,32 @@ public class Config {
         PackManager.v().runPacks();
 
         applicationCallGraph = Scene.v().getCallGraph();
+
+        Iterator<Edge> edgeItr = applicationCallGraph.iterator();
+        List<String> edgeList = new ArrayList<>();
+
+        while(edgeItr.hasNext()){
+            Edge edge = edgeItr.next();
+
+            SootMethod srcMethod = edge.getSrc().method();
+            String srcMethodDeclaration = srcMethod.getDeclaringClass().toString() + "." +
+                    srcMethod.getName().toString() +
+                    srcMethod.getParameterTypes().toString()
+                            .replace('[', '(').replace(']', ')');
+
+            SootMethod tgtMethod = edge.getTgt().method();
+            String tgtMethodDeclaration = tgtMethod.getDeclaringClass().toString() + "." +
+                    tgtMethod.getName().toString() +
+                    tgtMethod.getParameterTypes().toString()
+                            .replace('[', '(').replace(']', ')');
+
+            edgeList.add(srcMethodDeclaration + " => " + tgtMethodDeclaration);
+            //System.out.println(srcMethodDeclaration + " => " + tgtMethodDeclaration);
+        }
+        //System.out.println(applicationCallGraph.size());
+        for (String edgeStr : edgeList){
+            getResultPs().println(edgeStr);
+        }
 
         Util.LOGGER.info("initialization finished...");
         Util.LOGGER.info(String.format("[mode]%s, [input]%s, [output]%s",

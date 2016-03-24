@@ -25,14 +25,5 @@ public class Main {
 
         Config.init();
 
-        for (SootClass cls : Config.applicationClasses) {
-            for (SootMethod mth: cls.getMethods()){
-                String DeclaringClass = mth.getDeclaringClass().toString();
-                String MethodDeclaration = mth.getName().toString() +
-                        mth.getParameterTypes().toString()
-                                .replace('[', '(').replace(']', ')');
-                System.out.println(DeclaringClass + '.' + MethodDeclaration);
-            }
-        }
     }
 }
