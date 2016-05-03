@@ -13,6 +13,7 @@ public class Main {
 //        Util.printCG(cg, System.out);
 
         generateCGForAPK(
+                // TODO @Yuxuan, replace this with your APK path
                 "/home/liyc/temp/apk_samples/com.aws.android.apk",
                 "output",
                 "android.jar");
@@ -27,7 +28,7 @@ public class Main {
         Config.init();
 
         CallGraph cg = Util.generateCG();
-        // @Yuxuan, replace this with cg2dot
+        // TODO @Yuxuan, replace this with your cg2dot
         Util.printCG(cg, Config.getResultPs());
     }
 }
