@@ -1,7 +1,3 @@
-/**
- * Created by yzy on 15-11-23.
- */
-
 import soot.PackManager;
 import soot.Scene;
 import soot.SootMethod;
@@ -35,10 +31,9 @@ public class Util {
         return (float) obfuscated / total;
     }
 
-    public CallGraph generateCG() {
+    public static CallGraph generateCG() {
         PackManager.v().runPacks();
-        CallGraph cg = Scene.v().getCallGraph();
-        return cg;
+        return Scene.v().getCallGraph();
     }
 
     public static void printCG(CallGraph cg, PrintStream ps) {

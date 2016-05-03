@@ -1,16 +1,7 @@
-/**
- * Created by yzy on 15-11-23.
- *
- */
-
-/**
- * Created by LiYC on 2015/7/18.
- * Package: UnuglifyDEX
- */
-
 import org.apache.commons.cli.*;
 import soot.*;
 import soot.jimple.infoflow.android.SetupApplication;
+import soot.jimple.infoflow.entryPointCreators.AndroidEntryPointCreator;
 import soot.jimple.spark.SparkTransformer;
 import soot.jimple.toolkits.callgraph.CHATransformer;
 import soot.jimple.toolkits.callgraph.CallGraph;
@@ -31,10 +22,6 @@ public class Config {
     // nice2predict server url for predicting
     public static final String projectName = "APK_CG";
 
-    // Mode (training or predicting)
-    public static boolean isTraining = false;
-    private static String mode = null;
-
     // File path of android.jar which is forced to use by soot
     public static String forceAndroidJarPath = "";
     // Libraries' directory, to be added to soot classpath
@@ -45,7 +32,6 @@ public class Config {
     public static String outputDir = "output";
 
     public static ArrayList<SootClass> applicationClasses;
-    public static boolean isInitialized = false;
     // @yzy
     // store call graph
     public static CallGraph applicationCallGraph;
@@ -62,12 +48,15 @@ public class Config {
                 .longOpt("input").hasArg().desc("path to target APK").build();
         Option sdk = Option.builder("sdk").argName("android.jar").required()
                 .longOpt("android-sdk").hasArg().desc("path to android.jar").build();
+//        Option sourceSinkOpt = Option.builder("source_sink").argName("SourcesAndSinks.txt").required()
+//                .longOpt("source_sink").hasArg().desc("SourcesAndSinks.txt").build();
 
         options.addOption(quiet);
         options.addOption(debug);
         options.addOption(output);
         options.addOption(input);
         options.addOption(sdk);
+//        options.addOption(sourceSinkOpt);
 
         CommandLineParser parser = new DefaultParser();
 
@@ -75,8 +64,6 @@ public class Config {
             CommandLine cmd = parser.parse(options, args);
             if (cmd.hasOption("debug")) Util.LOGGER.setLevel(Level.ALL);
             if (cmd.hasOption("quiet")) Util.LOGGER.setLevel(Level.WARNING);
-            if (cmd.hasOption("train")) Config.isTraining = true;
-            mode = Config.isTraining ? "train" : "predict";
             if (cmd.hasOption("i")) {
                 Config.codeDir = cmd.getOptionValue("i");
                 File codeDirFile = new File(Config.codeDir);
@@ -86,8 +73,8 @@ public class Config {
             }
             if (cmd.hasOption('o')) {
                 Config.outputDir = cmd.getOptionValue('o');
-                File workingDir = new File(String.format("%s/UnuglifyDex_%S_%s/",
-                        Config.outputDir, mode, Util.getTimeString()));
+                File workingDir = new File(String.format("%s/APK_CG_%s/",
+                        Config.outputDir, Util.getTimeString()));
 
                 Config.outputDir = workingDir.getPath();
                 if (!workingDir.exists() && !workingDir.mkdirs()) {
@@ -120,8 +107,8 @@ public class Config {
     public static void init() {
         Util.LOGGER.log(Level.INFO, "initializing...");
 
-        File logFile = new File(String.format("%s/%s.log", Config.outputDir, mode));
-        File resultFile = new File(String.format("%s/%s.txt", Config.outputDir, mode));
+        File logFile = new File(String.format("%s/gen_cg.log", Config.outputDir));
+        File resultFile = new File(String.format("%s/cg.txt", Config.outputDir));
 
         try {
             FileHandler fh = new FileHandler(logFile.getAbsolutePath());
@@ -134,7 +121,7 @@ public class Config {
 
         SetupApplication app = new SetupApplication(forceAndroidJarPath, codeDir);
         try{
-            app.calculateSourcesSinksEntrypoints("/home/yzy/work/2016_spring/cgGenerator/lib/SourcesAndSinks.txt");
+            app.calculateSourcesSinksEntrypoints("SourcesAndSinks.txt");
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -152,8 +139,6 @@ public class Config {
         Options.v().setPhaseOption("cg.spark", "on");
         Scene.v().loadNecessaryClasses();
 
-        Config.isInitialized = true;
-
         applicationClasses = new ArrayList<>();
         for (SootClass cls : Scene.v().getApplicationClasses()) {
             applicationClasses.add(cls);
@@ -166,13 +151,21 @@ public class Config {
             }
         });
 
-        SootMethod entryPoint = app.getEntryPointCreator().createDummyMain();
+//        ArrayList<SootMethod> entries = new ArrayList<>();
+//        for (SootClass appCls : applicationClasses) {
+//            for (SootMethod appMethod : appCls.getMethods()) {
+//                if (appMethod.isPublic() && appMethod.hasActiveBody()) {
+//                    entries.add(appMethod);
+//                }
+//            }
+//        }
+        AndroidEntryPointCreator epCreator = app.getEntryPointCreator();
+        SootMethod entryPoint = epCreator.createDummyMain();
         Options.v().set_main_class(entryPoint.getSignature());
         Scene.v().setEntryPoints(Collections.singletonList(entryPoint));
 
         Util.LOGGER.info("initialization finished...");
-        Util.LOGGER.info(String.format("[mode]%s, [input]%s, [output]%s",
-                mode, Config.codeDir, Config.outputDir));
+        Util.LOGGER.info(String.format("[input]%s, [output]%s", Config.codeDir, Config.outputDir));
     }
 
     public static PrintStream getResultPs() {
