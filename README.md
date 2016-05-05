@@ -2,7 +2,7 @@
 Generate the call graph of an Android APK.
 
 # Usage
-1. Download the source code, and import as an intellij project.
+1. Download the source code and import as an intellij project.
 
   > git clone https://github.com/lynnlyc/APK_CG.git
 
